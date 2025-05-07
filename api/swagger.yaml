@@ -1,0 +1,58 @@
+basePath: /
+definitions:
+  go_template_project_internal_domain.Product:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+info:
+  contact: {}
+  description: GO TEMPLATE PROJECT
+  title: GO TEMPLATE PROJECT
+  version: "1.0"
+paths:
+  /api/products/:
+    get:
+      description: Get products list by limit and offset
+      parameters:
+      - default: 50
+        description: List limit
+        in: query
+        name: limit
+        type: integer
+      - description: List offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            items:
+              $ref: '#/definitions/go_template_project_internal_domain.Product'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get products
+      tags:
+      - Products
+swagger: "2.0"
