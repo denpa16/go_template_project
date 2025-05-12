@@ -19,7 +19,7 @@ func (r *Repository) GetProducts(
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("sqlc get products error: %w", err)
+		return nil, fmt.Errorf("sqlc get products_get error: %w", err)
 	}
 
 	var products []domain.Product

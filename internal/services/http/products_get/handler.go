@@ -1,4 +1,4 @@
-package products
+package products_get
 
 import (
 	"context"
