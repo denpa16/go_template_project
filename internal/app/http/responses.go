@@ -13,10 +13,11 @@ func GetResponse(
 	body *[]byte,
 ) {
 	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json")
 	if body != nil {
 		_, _ = w.Write(*body)
 	}
-	if err == nil {
+	if err != nil {
 		buf := bytes.NewBufferString(handlerName)
 		buf.WriteString(": ")
 		buf.WriteString(err.Error())

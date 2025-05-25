@@ -8,29 +8,29 @@ import (
 
 func (r *Repository) GetProducts(
 	ctx context.Context,
-	limit, offset int,
+	limit, offset int64,
 ) ([]domain.Product, error) {
 	// Products list
-	sqlcProducts, err := r.queries.SqlcGetProducts(
+	sqProducts, err := r.queries.SqGetProducts(
 		ctx,
-		SqlcGetProductsParams{
-			Limit:  int32(limit),
-			Offset: int32(offset),
+		SqGetProductsParams{
+			Limit:  limit,
+			Offset: offset,
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("sqlc get products_get error: %w", err)
+		return nil, fmt.Errorf("sq get products error: %w", err)
 	}
 
-	var products []domain.Product
+	products := make([]domain.Product, 0)
 
-	for _, sqlcProduct := range sqlcProducts {
+	for _, sqProduct := range sqProducts {
 		products = append(products, domain.Product{
-			ID:        sqlcProduct.ID,
-			Name:      sqlcProduct.Name,
-			CreatedAt: sqlcProduct.CreatedAt.Time,
-			UpdatedAt: sqlcProduct.UpdatedAt.Time,
-			DeletedAt: NConvertPgTimestamp(sqlcProduct.DeletedAt),
+			ID:        sqProduct.ID,
+			Name:      sqProduct.Name,
+			CreatedAt: sqProduct.CreatedAt.Time,
+			UpdatedAt: sqProduct.UpdatedAt.Time,
+			DeletedAt: NConvertPgTimestamp(sqProduct.DeletedAt),
 		})
 	}
 

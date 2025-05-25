@@ -12,7 +12,7 @@ import (
 
 type (
 	getProductsGetCommand interface {
-		GetProducts(ctx context.Context, limit, offset int) ([]domain.Product, error)
+		GetProducts(ctx context.Context, limit, offset int64) ([]domain.Product, error)
 	}
 
 	ProductsGetHandler struct {
@@ -21,8 +21,8 @@ type (
 	}
 
 	getProductsGetRequest struct {
-		Limit  int `json:"limit"`
-		Offset int `json:"offset"`
+		Limit  int64 `json:"limit"`
+		Offset int64 `json:"offset"`
 	}
 )
 
@@ -119,7 +119,7 @@ func (h *ProductsGetHandler) getRequestData(r *http.Request) (requestData *getPr
 	if limit == 0 || limit > 50 {
 		limit = 50
 	}
-	requestData.Limit = limit
+	requestData.Limit = int64(limit)
 
 	// offset
 	offset, err := strconv.Atoi(r.FormValue("offset"))
@@ -127,7 +127,7 @@ func (h *ProductsGetHandler) getRequestData(r *http.Request) (requestData *getPr
 		// return request, err
 		offset = 0
 	}
-	requestData.Offset = offset
+	requestData.Offset = int64(offset)
 
 	return
 }
