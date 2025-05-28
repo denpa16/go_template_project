@@ -48,7 +48,7 @@ func NewApp(ctx context.Context, config config.Config) (*App, error) {
 	mux.Handle("GET /metrics/", promhttp.Handler())
 
 	// Internal layer
-	appHttp.RegisterHandlers(mux, repo)
+	appHttp.RegisterRoutes(mux, repo)
 
 	// END API ------------
 
