@@ -12,7 +12,7 @@ import (
 
 type (
 	getProductsGetCommand interface {
-		GetProducts(ctx context.Context, limit, offset int64) ([]domain.Product, error)
+		GetProducts(ctx context.Context, data domain.GetProductsDTO) ([]domain.Product, error)
 	}
 
 	ProductsGetHandler struct {
@@ -21,8 +21,7 @@ type (
 	}
 
 	getProductsGetRequest struct {
-		Limit  int64 `json:"limit"`
-		Offset int64 `json:"offset"`
+		params domain.GetProductsDTO
 	}
 )
 
@@ -72,7 +71,7 @@ func (h *ProductsGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseRawBody, err := h.getProductsGetCommand.GetProducts(ctx, requestData.Limit, requestData.Offset)
+	responseRawBody, err := h.getProductsGetCommand.GetProducts(ctx, requestData.params)
 
 	if err != nil {
 		GetResponse(
@@ -109,25 +108,29 @@ func (h *ProductsGetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *ProductsGetHandler) getRequestData(r *http.Request) (requestData *getProductsGetRequest, err error) {
 	requestData = &getProductsGetRequest{}
 
-	// Default values
-	// limit
 	limit, err := strconv.Atoi(r.FormValue("limit"))
 	if err != nil {
-		// return request, err
 		limit = 50
 	}
 	if limit == 0 || limit > 50 {
 		limit = 50
 	}
-	requestData.Limit = int64(limit)
+	requestData.params.Limit = int64(limit)
 
-	// offset
 	offset, err := strconv.Atoi(r.FormValue("offset"))
 	if err != nil {
-		// return request, err
 		offset = 0
 	}
-	requestData.Offset = int64(offset)
+	requestData.params.Offset = int64(offset)
+
+	name := r.FormValue("name")
+	if name != "" {
+		requestData.params.Name = name
+	}
+	title := r.FormValue("title")
+	if title != "" {
+		requestData.params.Title = title
+	}
 
 	return
 }

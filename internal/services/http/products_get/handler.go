@@ -9,7 +9,7 @@ import (
 type repository interface {
 	GetProducts(
 		ctx context.Context,
-		limit, offset int64,
+		params domain.GetProductsDTO,
 	) ([]domain.Product, error)
 }
 
@@ -25,9 +25,9 @@ type Handler struct {
 
 func (h Handler) GetProducts(
 	ctx context.Context,
-	limit, offset int64,
+	params domain.GetProductsDTO,
 ) ([]domain.Product, error) {
-	products, err := h.repository.GetProducts(ctx, limit, offset)
+	products, err := h.repository.GetProducts(ctx, params)
 	if err != nil {
 		log.Println(err)
 		return products, err
