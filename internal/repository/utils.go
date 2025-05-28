@@ -15,13 +15,16 @@ func GetDbFieldsWithValues(data interface{}) map[string]interface{} {
 		fieldValue := v.Field(i)
 		isEmpty := reflect.DeepEqual(fieldValue.Interface(), reflect.Zero(fieldValue.Type()).Interface())
 		if !isEmpty {
-			result[field.Tag.Get("db")] = fieldValue.Interface()
+			tag := field.Tag.Get("db")
+			if tag != "" {
+				result[tag] = fieldValue.Interface()
+			}
 		}
 	}
 	return result
 }
 
-func AddWhereAnd(fields []string, query sq.SelectBuilder, dbFields map[string]interface{}) sq.SelectBuilder {
+func SelectBuilderAddWhereAnd(fields []string, query sq.SelectBuilder, dbFields map[string]interface{}) sq.SelectBuilder {
 	for _, field := range fields {
 		value, ok := dbFields[field]
 		if ok {
@@ -31,7 +34,43 @@ func AddWhereAnd(fields []string, query sq.SelectBuilder, dbFields map[string]in
 	return query
 }
 
-func AddWhereOr(field string, query sq.SelectBuilder, dbFields map[string]interface{}) sq.SelectBuilder {
+func SelectBuilderAddWhereOr(field string, query sq.SelectBuilder, dbFields map[string]interface{}) sq.SelectBuilder {
+	value, ok := dbFields[field]
+	if ok {
+		query = query.Where(sq.Or{sq.Eq{field: value}})
+	}
+	return query
+}
+
+func UpdateBuilderAddWhereAnd(fields []string, query sq.UpdateBuilder, dbFields map[string]interface{}) sq.UpdateBuilder {
+	for _, field := range fields {
+		value, ok := dbFields[field]
+		if ok {
+			query = query.Where(sq.And{sq.Eq{field: value}})
+		}
+	}
+	return query
+}
+
+func UpdateBuilderAddWhereOr(field string, query sq.UpdateBuilder, dbFields map[string]interface{}) sq.UpdateBuilder {
+	value, ok := dbFields[field]
+	if ok {
+		query = query.Where(sq.Or{sq.Eq{field: value}})
+	}
+	return query
+}
+
+func DeleteBuilderAddWhereAnd(fields []string, query sq.DeleteBuilder, dbFields map[string]interface{}) sq.DeleteBuilder {
+	for _, field := range fields {
+		value, ok := dbFields[field]
+		if ok {
+			query = query.Where(sq.And{sq.Eq{field: value}})
+		}
+	}
+	return query
+}
+
+func DeleteBuilderAddWhereOr(field string, query sq.DeleteBuilder, dbFields map[string]interface{}) sq.DeleteBuilder {
 	value, ok := dbFields[field]
 	if ok {
 		query = query.Where(sq.Or{sq.Eq{field: value}})

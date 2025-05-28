@@ -6,6 +6,8 @@ import (
 )
 
 const CreateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
+const PartialUpdateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
+const DeleteProductSuffix = `RETURNING id`
 
 type SqGetProductsRow struct {
 	ID        pgtype.UUID
@@ -34,6 +36,19 @@ type SqCreateProduct struct {
 	DeletedAt pgtype.Timestamp
 }
 
+type SqPartialUpdateProduct struct {
+	ID        pgtype.UUID
+	Name      string
+	Title     string
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
+	DeletedAt pgtype.Timestamp
+}
+
+type SqDeleteProduct struct {
+	ID pgtype.UUID
+}
+
 type GetProductsParams struct {
 	Limit  uint64
 	Offset uint64
@@ -48,6 +63,16 @@ type GetProductParams struct {
 type CreateProductParams struct {
 	Name  string `db:"name"`
 	Title string `db:"title"`
+}
+
+type PartialUpdateProductParams struct {
+	ID    pgtype.UUID
+	Name  string `db:"name"`
+	Title string `db:"title"`
+}
+
+type DeleteProductParams struct {
+	ID pgtype.UUID
 }
 
 func (q *Queries) SqGetProducts(
@@ -109,6 +134,29 @@ func (q *Queries) SqCreateRequest(ctx context.Context, query string, args []inte
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+	)
+	return &i, err
+}
+
+func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProduct, error) {
+	row := q.db.QueryRow(ctx, query, args...)
+	var i SqPartialUpdateProduct
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Title,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return &i, err
+}
+
+func (q *Queries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProduct, error) {
+	row := q.db.QueryRow(ctx, query, args...)
+	var i SqDeleteProduct
+	err := row.Scan(
+		&i.ID,
 	)
 	return &i, err
 }

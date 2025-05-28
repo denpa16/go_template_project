@@ -18,4 +18,12 @@ type repository interface {
 		ctx context.Context,
 		data productsDomain.GetProductDTO,
 	) (*productsDomain.Product, error)
+	PartialUpdateProduct(
+		ctx context.Context,
+		data productsDomain.PartialUpdateProductDTO,
+	) (*productsDomain.Product, error)
+	DeleteProduct(
+		ctx context.Context,
+		data productsDomain.DeleteProductDTO,
+	) (*productsDomain.Product, error)
 }

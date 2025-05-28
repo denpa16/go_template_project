@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	productsDomain "go_template_project/internal/domain/products"
 )
@@ -52,7 +54,7 @@ func buildGetProductsQuery(
 		Limit(params.Limit).
 		Offset(params.Offset).
 		PlaceholderFormat(sq.Dollar)
-	query = AddWhereAnd([]string{"name", "title"}, query, dbFields)
+	query = SelectBuilderAddWhereAnd([]string{"name", "title"}, query, dbFields)
 	sqlString, args, err := query.ToSql()
 	if err != nil {
 		return "", nil, fmt.Errorf("sq get products query to sql error: %w", err)
@@ -74,6 +76,9 @@ func (r *Repository) GetProduct(
 	}
 	sqProduct, err := r.queries.SqGetProduct(ctx, query, args)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, productsDomain.ErrProductNotFound
+		}
 		return nil, fmt.Errorf("sq get product error: %w", err)
 	}
 	product := &productsDomain.Product{
@@ -94,7 +99,7 @@ func buildGetProductQuery(
 	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
 		From("products").
 		PlaceholderFormat(sq.Dollar)
-	query = AddWhereAnd([]string{"id"}, query, dbFields)
+	query = SelectBuilderAddWhereAnd([]string{"id"}, query, dbFields)
 	sqlString, args, err := query.ToSql()
 	if err != nil {
 		return "", nil, fmt.Errorf("sq get product query to sql error: %w", err)
@@ -150,6 +155,98 @@ func buildCreateProductQuery(
 		Values(values...).
 		Suffix(CreateProductSuffix).
 		PlaceholderFormat(sq.Dollar)
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	fmt.Println(sqlString)
+	return sqlString, args, nil
+}
+
+func (r *Repository) PartialUpdateProduct(
+	ctx context.Context,
+	data productsDomain.PartialUpdateProductDTO,
+) (*productsDomain.Product, error) {
+	params := PartialUpdateProductParams{
+		ID:    pgtype.UUID{Bytes: data.ID, Valid: true},
+		Name:  data.Name,
+		Title: data.Title,
+	}
+	query, args, err := buildPartialUpdateProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq partial update product build query error: %w", err)
+	}
+	sqProduct, err := r.queries.SqPartialUpdateProduct(ctx, query, args)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, productsDomain.ErrProductNotFound
+		}
+		return nil, fmt.Errorf("sq partial update product error: %w", err)
+	}
+
+	request := productsDomain.Product{
+		ID:        sqProduct.ID.Bytes,
+		Name:      sqProduct.Name,
+		Title:     sqProduct.Title,
+		CreatedAt: sqProduct.CreatedAt.Time,
+		UpdatedAt: sqProduct.UpdatedAt.Time,
+		DeletedAt: NConvertPgTimestamp(sqProduct.DeletedAt),
+	}
+
+	return &request, nil
+}
+
+func buildPartialUpdateProductQuery(
+	params PartialUpdateProductParams,
+) (string, []interface{}, error) {
+	dbFields := GetDbFieldsWithValues(params)
+	fmt.Println(dbFields)
+	query := sq.Update("products").
+		SetMap(dbFields).
+		Suffix(PartialUpdateProductSuffix).
+		PlaceholderFormat(sq.Dollar)
+	query = UpdateBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	fmt.Println(sqlString)
+	return sqlString, args, nil
+}
+
+func (r *Repository) DeleteProduct(
+	ctx context.Context,
+	data productsDomain.DeleteProductDTO,
+) (*productsDomain.Product, error) {
+	params := DeleteProductParams{
+		ID: pgtype.UUID{Bytes: data.ID, Valid: true},
+	}
+	query, args, err := buildDeleteProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq delete product build query error: %w", err)
+	}
+	sqProduct, err := r.queries.SqDeleteProduct(ctx, query, args)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, productsDomain.ErrProductNotFound
+		}
+		return nil, fmt.Errorf("sq delete product error: %w", err)
+	}
+
+	request := productsDomain.Product{
+		ID: sqProduct.ID.Bytes,
+	}
+
+	return &request, nil
+}
+
+func buildDeleteProductQuery(
+	params DeleteProductParams,
+) (string, []interface{}, error) {
+	query := sq.Delete("products").
+		Suffix(DeleteProductSuffix).
+		PlaceholderFormat(sq.Dollar)
+	query = DeleteBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
 	sqlString, args, err := query.ToSql()
 	if err != nil {
 		return "", nil, err

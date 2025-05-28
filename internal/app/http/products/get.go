@@ -3,6 +3,7 @@ package products
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -73,6 +74,16 @@ func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	responseRawBody, err := h.getCommand.GetProduct(ctx, requestData.params)
 
 	if err != nil {
+		if errors.Is(err, productsDomain.ErrProductNotFound) {
+			httpResponses.GetResponse(
+				w,
+				h.name,
+				err,
+				http.StatusNotFound,
+				nil,
+			)
+			return
+		}
 		httpResponses.GetResponse(
 			w,
 			h.name,

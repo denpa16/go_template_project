@@ -36,4 +36,21 @@ func RegisterRoutes(
 			"POST /api/products",
 		),
 	)
+
+	// Partial update product
+	mux.Handle(
+		"PATCH /api/products/{id}",
+		NewProductPartialUpdateHandler(
+			command.New(repo),
+			"PATCH /api/products/{id}",
+		),
+	)
+	// Delete product
+	mux.Handle(
+		"DELETE /api/products/{id}",
+		NewProductDeleteHandler(
+			command.New(repo),
+			"DELETE /api/products/{id}",
+		),
+	)
 }

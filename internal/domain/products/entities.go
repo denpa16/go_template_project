@@ -29,3 +29,13 @@ type CreateProductDTO struct {
 	Name  string `json:"name"`
 	Title string `json:"title"`
 }
+
+type PartialUpdateProductDTO struct {
+	ID    uuid.UUID `json:"id"`
+	Name  string    `json:"name,omitempty"`
+	Title string    `json:"title,omitempty"`
+}
+
+type DeleteProductDTO struct {
+	ID uuid.UUID `json:"id"`
+}
