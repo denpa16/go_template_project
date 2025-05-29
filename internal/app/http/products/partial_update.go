@@ -43,10 +43,10 @@ func NewProductPartialUpdateHandler(command partialUpdateCommand, name string) *
 // @Description	PartialUpdate product by id
 // @Tags			Products
 // @Produce		json
-// @Success		200		{object}		domain.Product	"Product"
-// @Failure		400		{string}	string			"Bad Request"
-// @Failure		404		{string}	string			"Not found"
-// @Failure		500		{string}	string			"Internal Server Error"
+// @Success		200	{object}	productsDomain.Product	"Product"
+// @Failure		400	{string}	string					"Bad Request"
+// @Failure		404	{string}	string					"Not found"
+// @Failure		500	{string}	string					"Internal Server Error"
 // @Router			/api/products/{id} [patch]
 func (h *PartialUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (

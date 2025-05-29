@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	httpSwagger "github.com/swaggo/http-swagger"
 	appHttp "go_template_project/internal/app/http"
 	middlewaresHttp "go_template_project/internal/app/http/middlewares"
 	"go_template_project/internal/config"
@@ -39,16 +37,8 @@ func NewApp(ctx context.Context, config config.Config) (*App, error) {
 
 	// API ------------
 
-	// Swagger (if enabled in config)
-	if config.Server.SwaggerDocs {
-		mux.Handle("GET /docs/", httpSwagger.WrapHandler)
-	}
-
-	// Prometheus exporter
-	mux.Handle("GET /metrics/", promhttp.Handler())
-
 	// Internal layer
-	appHttp.RegisterRoutes(mux, repo)
+	appHttp.RegisterRoutes(config, mux, repo)
 
 	// END API ------------
 

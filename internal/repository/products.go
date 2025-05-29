@@ -121,7 +121,7 @@ func (r *Repository) CreateProduct(
 	if err != nil {
 		return nil, fmt.Errorf("sq create product build query error: %w", err)
 	}
-	sqProduct, err := r.queries.SqCreateRequest(ctx, query, args)
+	sqProduct, err := r.queries.SqCreateProduct(ctx, query, args)
 	if err != nil {
 		return nil, fmt.Errorf("sq create product error: %w", err)
 	}
@@ -253,4 +253,21 @@ func buildDeleteProductQuery(
 	}
 	fmt.Println(sqlString)
 	return sqlString, args, nil
+}
+
+func (r *Repository) BulkCreateProducts(
+	ctx context.Context,
+	data []productsDomain.Product,
+) (int64, error) {
+	rows := make([][]interface{}, 0, len(data))
+	for _, product := range data {
+		rows = append(rows, []interface{}{product.Title, product.Name})
+	}
+	columns := []string{"title", "name"}
+	sqProductsCount, err := r.queries.SqBulkCreateProducts(ctx, columns, rows)
+	if err != nil {
+		return 0, fmt.Errorf("sq bulk create products error: %w", err)
+	}
+
+	return sqProductsCount, nil
 }

@@ -26,4 +26,8 @@ type repository interface {
 		ctx context.Context,
 		data productsDomain.DeleteProductDTO,
 	) (*productsDomain.Product, error)
+	BulkCreateProducts(
+		ctx context.Context,
+		data []productsDomain.Product,
+	) (int64, error)
 }

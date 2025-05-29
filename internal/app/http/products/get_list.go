@@ -37,11 +37,11 @@ func NewProductsGetHandler(command getListCommand, name string) *GetListHandler 
 // @Description	Get products list by limit and offset
 // @Tags			Products
 // @Produce		json
-// @Param			limit	query		int				false	"List limit"	default(50)	max(50)
-// @Param			offset	query		int				false	"List offset"
-// @Success		200		{array}		domain.Product	"Product"
-// @Failure		400		{string}	string			"Bad Request"
-// @Failure		500		{string}	string			"Internal Server Error"
+// @Param			limit	query		int						false	"List limit"	default(50)	max(50)
+// @Param			offset	query		int						false	"List offset"
+// @Success		200		{array}		productsDomain.Product	"Product"
+// @Failure		400		{string}	string					"Bad Request"
+// @Failure		500		{string}	string					"Internal Server Error"
 // @Router			/api/products/ [get]
 func (h *GetListHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (

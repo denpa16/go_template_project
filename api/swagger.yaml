@@ -1,14 +1,16 @@
 basePath: /
 definitions:
-  go_template_project_internal_domain.Product:
+  go_template_project_internal_domain_products.Product:
     properties:
       created_at:
         type: string
       deleted_at:
         type: string
       id:
-        type: integer
+        type: string
       name:
+        type: string
+      title:
         type: string
       updated_at:
         type: string
@@ -22,6 +24,48 @@ info:
   title: GO TEMPLATE PROJECT
   version: "1.0"
 paths:
+  /api/product:
+    post:
+      description: Create product by id
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Product
+          schema:
+            $ref: '#/definitions/go_template_project_internal_domain_products.Product'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create product
+      tags:
+      - Products
+  /api/products:
+    post:
+      description: Bulk create products
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Bulk create products
+      tags:
+      - Products
   /api/products/:
     get:
       description: Get products list by limit and offset
@@ -42,7 +86,7 @@ paths:
           description: Product
           schema:
             items:
-              $ref: '#/definitions/go_template_project_internal_domain.Product'
+              $ref: '#/definitions/go_template_project_internal_domain_products.Product'
             type: array
         "400":
           description: Bad Request
@@ -53,6 +97,79 @@ paths:
           schema:
             type: string
       summary: Get products
+      tags:
+      - Products
+  /api/products/{id}:
+    delete:
+      description: Delete product by id
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete product
+      tags:
+      - Products
+    get:
+      description: Get product by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            $ref: '#/definitions/go_template_project_internal_domain_products.Product'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get product
+      tags:
+      - Products
+    patch:
+      description: PartialUpdate product by id
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product
+          schema:
+            $ref: '#/definitions/go_template_project_internal_domain_products.Product'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: PartialUpdate product
       tags:
       - Products
 swagger: "2.0"

@@ -38,9 +38,10 @@ func NewProductGetHandler(command getCommand, name string) *GetHandler {
 // @Description	Get product by id
 // @Tags			Products
 // @Produce		json
-// @Success		200		{object}		domain.Product	"Product"
-// @Failure		400		{string}	string			"Bad Request"
-// @Failure		500		{string}	string			"Internal Server Error"
+// @Success		200	{object}	productsDomain.Product	"Product"
+// @Failure		400	{string}	string					"Bad Request"
+// @Failure		404	{string}	string					"Not Found"
+// @Failure		500	{string}	string					"Internal Server Error"
 // @Router			/api/products/{id} [get]
 func (h *GetHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (

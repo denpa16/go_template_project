@@ -30,8 +30,17 @@ func RegisterRoutes(
 
 	// Create product
 	mux.Handle(
-		"POST /api/products",
+		"POST /api/product",
 		NewProductCreateHandler(
+			command.New(repo),
+			"POST /api/product",
+		),
+	)
+
+	// Bulk create products
+	mux.Handle(
+		"POST /api/products",
+		NewProductBulkCreateHandler(
 			command.New(repo),
 			"POST /api/products",
 		),

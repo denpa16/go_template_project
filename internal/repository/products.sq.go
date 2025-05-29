@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"fmt"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -18,7 +20,7 @@ type SqGetProductsRow struct {
 	DeletedAt pgtype.Timestamp
 }
 
-type SqGetProduct struct {
+type SqGetProductRow struct {
 	ID        pgtype.UUID
 	Name      string
 	Title     string
@@ -27,7 +29,7 @@ type SqGetProduct struct {
 	DeletedAt pgtype.Timestamp
 }
 
-type SqCreateProduct struct {
+type SqCreateProductRow struct {
 	ID        pgtype.UUID
 	Name      string
 	Title     string
@@ -36,7 +38,7 @@ type SqCreateProduct struct {
 	DeletedAt pgtype.Timestamp
 }
 
-type SqPartialUpdateProduct struct {
+type SqPartialUpdateProductRow struct {
 	ID        pgtype.UUID
 	Name      string
 	Title     string
@@ -45,7 +47,7 @@ type SqPartialUpdateProduct struct {
 	DeletedAt pgtype.Timestamp
 }
 
-type SqDeleteProduct struct {
+type SqDeleteProductRow struct {
 	ID pgtype.UUID
 }
 
@@ -110,9 +112,9 @@ func (q *Queries) SqGetProduct(
 	ctx context.Context,
 	query string,
 	args []interface{},
-) (SqGetProduct, error) {
+) (SqGetProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqGetProduct
+	var i SqGetProductRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -124,9 +126,9 @@ func (q *Queries) SqGetProduct(
 	return i, err
 }
 
-func (q *Queries) SqCreateRequest(ctx context.Context, query string, args []interface{}) (*SqCreateProduct, error) {
+func (q *Queries) SqCreateProduct(ctx context.Context, query string, args []interface{}) (*SqCreateProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqCreateProduct
+	var i SqCreateProductRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -138,9 +140,9 @@ func (q *Queries) SqCreateRequest(ctx context.Context, query string, args []inte
 	return &i, err
 }
 
-func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProduct, error) {
+func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqPartialUpdateProduct
+	var i SqPartialUpdateProductRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -152,11 +154,28 @@ func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args
 	return &i, err
 }
 
-func (q *Queries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProduct, error) {
+func (q *Queries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqDeleteProduct
+	var i SqDeleteProductRow
 	err := row.Scan(
 		&i.ID,
 	)
 	return &i, err
+}
+
+func (q *Queries) SqBulkCreateProducts(
+	ctx context.Context,
+	columns []string,
+	sqProducts [][]interface{},
+) (int64, error) {
+	count, err := q.db.CopyFrom(
+		ctx,
+		pgx.Identifier{"products"},
+		columns,
+		pgx.CopyFromRows(sqProducts),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("query failed: %w", err)
+	}
+	return count, nil
 }

@@ -38,9 +38,10 @@ func NewProductDeleteHandler(command deleteCommand, name string) *DeleteHandler 
 // @Description	Delete product by id
 // @Tags			Products
 // @Produce		json
-// @Success		200		{object}		domain.Product	"Product"
-// @Failure		400		{string}	string			"Bad Request"
-// @Failure		500		{string}	string			"Internal Server Error"
+// @Success		204	{object}	string	"No content"
+// @Failure		400	{string}	string	"Bad Request"
+// @Failure		404	{string}	string	"Not Found"
+// @Failure		500	{string}	string	"Internal Server Error"
 // @Router			/api/products/{id} [delete]
 func (h *DeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -110,7 +111,7 @@ func (h *DeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w,
 		h.name,
 		nil,
-		http.StatusOK,
+		http.StatusNoContent,
 		&responseBody,
 	)
 }

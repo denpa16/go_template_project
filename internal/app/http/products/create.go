@@ -38,10 +38,10 @@ func NewProductCreateHandler(command createCommand, name string) *CreateHandler 
 // @Description	Create product by id
 // @Tags			Products
 // @Produce		json
-// @Success		201		{object}		domain.Product	"Product"
-// @Failure		400		{string}	string			"Bad Request"
-// @Failure		500		{string}	string			"Internal Server Error"
-// @Router			/api/products [post]
+// @Success		201	{object}	productsDomain.Product	"Product"
+// @Failure		400	{string}	string					"Bad Request"
+// @Failure		500	{string}	string					"Internal Server Error"
+// @Router			/api/product [post]
 func (h *CreateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx         = r.Context()
