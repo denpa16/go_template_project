@@ -13,5 +13,5 @@
 ```
 
 ## Какие есть фичи
-![img.png](img.png)
+![img.png](docs/img.png)
 
