@@ -10,6 +10,16 @@ import (
 const CreateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const PartialUpdateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const DeleteProductSuffix = `RETURNING id`
+const BulkUpdateProductsSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
+
+type SqProductRow struct {
+	ID        pgtype.UUID
+	Name      string
+	Title     string
+	CreatedAt pgtype.Timestamp
+	UpdatedAt pgtype.Timestamp
+	DeletedAt pgtype.Timestamp
+}
 
 type SqGetProductsRow struct {
 	ID        pgtype.UUID
@@ -51,6 +61,12 @@ type SqDeleteProductRow struct {
 	ID pgtype.UUID
 }
 
+type SqBulkUpdateProductRow struct {
+	ID    pgtype.UUID
+	Name  string
+	Title string
+}
+
 type GetProductsParams struct {
 	Limit  uint64
 	Offset uint64
@@ -73,8 +89,14 @@ type PartialUpdateProductParams struct {
 	Title string `db:"title"`
 }
 
-type DeleteProductParams struct {
-	ID pgtype.UUID
+type SqDeleteProductParams struct {
+	ID pgtype.UUID `db:"id"`
+}
+
+type SqBulkUpdateProductsParams struct {
+	ID    pgtype.UUID
+	Name  string `db:"name"`
+	Title string `db:"title"`
 }
 
 func (q *Queries) SqGetProducts(
@@ -178,4 +200,35 @@ func (q *Queries) SqBulkCreateProducts(
 		return 0, fmt.Errorf("query failed: %w", err)
 	}
 	return count, nil
+}
+
+func (q *Queries) SqBulkUpdateProducts(
+	ctx context.Context,
+	query string,
+	args []interface{},
+) ([]SqProductRow, error) {
+	rows, err := q.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SqProductRow
+	for rows.Next() {
+		var i SqProductRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

@@ -200,7 +200,6 @@ func buildPartialUpdateProductQuery(
 	params PartialUpdateProductParams,
 ) (string, []interface{}, error) {
 	dbFields := GetDbFieldsWithValues(params)
-	fmt.Println(dbFields)
 	query := sq.Update("products").
 		SetMap(dbFields).
 		Suffix(PartialUpdateProductSuffix).
@@ -218,7 +217,7 @@ func (r *Repository) DeleteProduct(
 	ctx context.Context,
 	data productsDomain.DeleteProductDTO,
 ) (*productsDomain.Product, error) {
-	params := DeleteProductParams{
+	params := SqDeleteProductParams{
 		ID: pgtype.UUID{Bytes: data.ID, Valid: true},
 	}
 	query, args, err := buildDeleteProductQuery(params)
@@ -241,7 +240,7 @@ func (r *Repository) DeleteProduct(
 }
 
 func buildDeleteProductQuery(
-	params DeleteProductParams,
+	params SqDeleteProductParams,
 ) (string, []interface{}, error) {
 	query := sq.Delete("products").
 		Suffix(DeleteProductSuffix).
@@ -270,4 +269,67 @@ func (r *Repository) BulkCreateProducts(
 	}
 
 	return sqProductsCount, nil
+}
+
+func (r *Repository) BulkUpdateProducts(
+	ctx context.Context,
+	data []productsDomain.Product,
+) ([]productsDomain.Product, error) {
+	var params []SqBulkUpdateProductsParams
+	for _, product := range data {
+		params = append(params, SqBulkUpdateProductsParams{
+			ID:    pgtype.UUID{Bytes: product.ID, Valid: true},
+			Title: product.Title,
+			Name:  product.Name,
+		})
+	}
+	sqlString, args, err := buildBulkUpdateProductsQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq bulk update products build query error: %w", err)
+	}
+	sqProducts, err := r.queries.SqBulkUpdateProducts(ctx, sqlString, args)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build update query: %w", err)
+	}
+	products := make([]productsDomain.Product, 0)
+
+	for _, sqProduct := range sqProducts {
+		products = append(products, productsDomain.Product{
+			ID:        sqProduct.ID.Bytes,
+			Name:      sqProduct.Name,
+			Title:     sqProduct.Title,
+			CreatedAt: sqProduct.CreatedAt.Time,
+			UpdatedAt: sqProduct.UpdatedAt.Time,
+			DeletedAt: NConvertPgTimestamp(sqProduct.DeletedAt),
+		})
+	}
+
+	return products, nil
+}
+
+func buildBulkUpdateProductsQuery(
+	data []SqBulkUpdateProductsParams,
+) (string, []interface{}, error) {
+	query := sq.Update("products").
+		Suffix(BulkUpdateProductsSuffix).
+		PlaceholderFormat(sq.Dollar)
+
+	nameCase := sq.Case("id")
+
+	for _, p := range data {
+		nameCase = nameCase.When(p.ID, p.Name)
+	}
+	query = query.Set("name", nameCase)
+
+	var ids []pgtype.UUID
+	for _, p := range data {
+		ids = append(ids, p.ID)
+	}
+	query = query.Where(sq.Eq{"id": ids})
+
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to build update query: %w", err)
+	}
+	return sqlString, args, nil
 }
