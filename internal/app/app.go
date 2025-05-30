@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	appHttp "go_template_project/internal/app/http"
-	middlewaresHttp "go_template_project/internal/app/http/middlewares"
 	"go_template_project/internal/config"
 	dbRepo "go_template_project/internal/repository"
 	"log"
@@ -19,45 +18,31 @@ type (
 	App struct {
 		config     config.Config
 		repository *dbRepo.Repository
-		mux        *http.ServeMux
 		server     *http.Server
 	}
 )
 
 func NewApp(ctx context.Context, config config.Config) (*App, error) {
-	conn, err := dbRepo.NewPgxConn(ctx, config.Repository) // DB connection
+	// DB connection
+	conn, err := dbRepo.NewPgxConn(ctx, config.Repository)
 	if err != nil {
 		return nil, err
 	}
 
-	repo := dbRepo.NewRepo(conn) // Repository
+	// Repository
+	repo := dbRepo.NewRepo(conn)
 
-	// HTTP router for integration layer
-	mux := http.NewServeMux()
-
-	// API ------------
-
-	// Internal layer
-	appHttp.RegisterRoutes(config, mux, repo)
-
-	// END API ------------
-
-	// add logging middleware
-	httpHandler := middlewaresHttp.LoggingMiddlewareHandler(mux)
-
-	// add cors middleware
-	if config.Server.AllowCors {
-		httpHandler = middlewaresHttp.AllowCors(httpHandler)
-	}
-
-	httpServerAddr := fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port)
+	// HTTP router
+	mux := appHttp.RegisterRoutes(config, repo)
 
 	// Merge components into app
 	return &App{
 		config:     config,
 		repository: repo,
-		mux:        mux,
-		server:     &http.Server{Addr: httpServerAddr, Handler: httpHandler},
+		server: &http.Server{
+			Addr:    fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port),
+			Handler: mux,
+		},
 	}, nil
 }
 
