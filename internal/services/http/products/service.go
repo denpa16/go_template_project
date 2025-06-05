@@ -1,7 +1,7 @@
 package products
 
 type Handler struct {
-	repository repository
+	repository
 }
 
 func New(repo repository) Handler {

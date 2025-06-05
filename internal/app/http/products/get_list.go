@@ -38,7 +38,7 @@ func NewProductsGetHandler(command getListCommand, name string) *GetListHandler 
 // @Tags			Products
 // @Produce		json
 // @Param			limit	query		int						false	"List limit"	default(50)	max(50)
-// @Param			offset	query		int						false	"List offset"
+// @Param			offset	query		int						false	"List offset"	default(0)
 // @Success		200		{array}		productsDomain.Product	"Product"
 // @Failure		400		{string}	string					"Bad Request"
 // @Failure		500		{string}	string					"Internal Server Error"

@@ -99,6 +99,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
+                        "default": 0,
                         "description": "List offset",
                         "name": "offset",
                         "in": "query"

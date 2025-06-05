@@ -1,4 +1,4 @@
-package repository
+package products
 
 import (
 	"context"
@@ -99,7 +99,7 @@ type SqBulkUpdateProductsParams struct {
 	Title string `db:"title"`
 }
 
-func (q *Queries) SqGetProducts(
+func (q *RepoQueries) SqGetProducts(
 	ctx context.Context,
 	query string,
 	args []interface{},
@@ -130,7 +130,7 @@ func (q *Queries) SqGetProducts(
 	return items, nil
 }
 
-func (q *Queries) SqGetProduct(
+func (q *RepoQueries) SqGetProduct(
 	ctx context.Context,
 	query string,
 	args []interface{},
@@ -148,7 +148,7 @@ func (q *Queries) SqGetProduct(
 	return i, err
 }
 
-func (q *Queries) SqCreateProduct(ctx context.Context, query string, args []interface{}) (*SqCreateProductRow, error) {
+func (q *RepoQueries) SqCreateProduct(ctx context.Context, query string, args []interface{}) (*SqCreateProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqCreateProductRow
 	err := row.Scan(
@@ -162,7 +162,7 @@ func (q *Queries) SqCreateProduct(ctx context.Context, query string, args []inte
 	return &i, err
 }
 
-func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProductRow, error) {
+func (q *RepoQueries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqPartialUpdateProductRow
 	err := row.Scan(
@@ -176,7 +176,7 @@ func (q *Queries) SqPartialUpdateProduct(ctx context.Context, query string, args
 	return &i, err
 }
 
-func (q *Queries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProductRow, error) {
+func (q *RepoQueries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProductRow, error) {
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqDeleteProductRow
 	err := row.Scan(
@@ -185,7 +185,7 @@ func (q *Queries) SqDeleteProduct(ctx context.Context, query string, args []inte
 	return &i, err
 }
 
-func (q *Queries) SqBulkCreateProducts(
+func (q *RepoQueries) SqBulkCreateProducts(
 	ctx context.Context,
 	columns []string,
 	sqProducts [][]interface{},
@@ -202,7 +202,7 @@ func (q *Queries) SqBulkCreateProducts(
 	return count, nil
 }
 
-func (q *Queries) SqBulkUpdateProducts(
+func (q *RepoQueries) SqBulkUpdateProducts(
 	ctx context.Context,
 	query string,
 	args []interface{},

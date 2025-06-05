@@ -75,7 +75,8 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: List offset
+      - default: 0
+        description: List offset
         in: query
         name: offset
         type: integer
