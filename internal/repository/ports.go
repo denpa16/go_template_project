@@ -30,7 +30,7 @@ type (
 		BulkCreateProducts(
 			ctx context.Context,
 			data []productsDomain.Product,
-		) (int64, error)
+		) ([]productsDomain.Product, error)
 		BulkUpdateProducts(
 			ctx context.Context,
 			data []productsDomain.Product,
