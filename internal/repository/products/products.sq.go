@@ -22,48 +22,7 @@ type SqProductRow struct {
 	DeletedAt pgtype.Timestamp
 }
 
-type SqGetProductsRow struct {
-	ID        pgtype.UUID
-	Name      string
-	Title     string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	DeletedAt pgtype.Timestamp
-}
-
-type SqGetProductRow struct {
-	ID        pgtype.UUID
-	Name      string
-	Title     string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	DeletedAt pgtype.Timestamp
-}
-
-type SqCreateProductRow struct {
-	ID        pgtype.UUID
-	Name      string
-	Title     string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	DeletedAt pgtype.Timestamp
-}
-
-type SqPartialUpdateProductRow struct {
-	ID        pgtype.UUID
-	Name      string
-	Title     string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
-	DeletedAt pgtype.Timestamp
-}
-
-type SqDeleteProductRow struct {
-	ID pgtype.UUID
-}
-
-type SqBulkUpdateProductRow struct {
-	ID    pgtype.UUID
+type SqCreateProductParams struct {
 	Name  string
 	Title string
 }
@@ -77,11 +36,6 @@ type SqGetProductsParams struct {
 
 type SqGetProductParams struct {
 	ID pgtype.UUID `db:"id"`
-}
-
-type SqCreateProductParams struct {
-	Name  string `db:"name"`
-	Title string `db:"title"`
 }
 
 type SqPartialUpdateProductParams struct {
@@ -103,7 +57,7 @@ type SqBulkUpdateProductsParams struct {
 func (q *RepoQueries) SqGetProducts(
 	ctx context.Context,
 	params SqGetProductsParams,
-) ([]SqGetProductsRow, error) {
+) ([]SqProductRow, error) {
 	query, args, err := buildGetProductsQuery(params)
 	if err != nil {
 		return nil, fmt.Errorf("sq get products build query error: %w", err)
@@ -113,9 +67,9 @@ func (q *RepoQueries) SqGetProducts(
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SqGetProductsRow
+	var items []SqProductRow
 	for rows.Next() {
-		var i SqGetProductsRow
+		var i SqProductRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -154,13 +108,13 @@ func buildGetProductsQuery(
 func (q *RepoQueries) SqGetProduct(
 	ctx context.Context,
 	params SqGetProductParams,
-) (*SqGetProductRow, error) {
+) (*SqProductRow, error) {
 	query, args, err := buildGetProductQuery(params)
 	if err != nil {
 		return nil, fmt.Errorf("sq get product build query error: %w", err)
 	}
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqGetProductRow
+	var i SqProductRow
 	err = row.Scan(
 		&i.ID,
 		&i.Name,
@@ -190,13 +144,13 @@ func buildGetProductQuery(
 func (q *RepoQueries) SqCreateProduct(
 	ctx context.Context,
 	params SqCreateProductParams,
-) (*SqCreateProductRow, error) {
+) (*SqProductRow, error) {
 	query, args, err := buildCreateProductQuery(params)
 	if err != nil {
 		return nil, fmt.Errorf("sq create product build query error: %w", err)
 	}
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqCreateProductRow
+	var i SqProductRow
 	err = row.Scan(
 		&i.ID,
 		&i.Name,
@@ -235,14 +189,14 @@ func buildCreateProductQuery(
 func (q *RepoQueries) SqPartialUpdateProduct(
 	ctx context.Context,
 	params SqPartialUpdateProductParams,
-) (*SqPartialUpdateProductRow, error) {
+) (*SqProductRow, error) {
 	query, args, err := buildPartialUpdateProductQuery(params)
 	if err != nil {
 		return nil, fmt.Errorf("sq partial update product build query error: %w", err)
 	}
 
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqPartialUpdateProductRow
+	var i SqProductRow
 	err = row.Scan(
 		&i.ID,
 		&i.Name,
@@ -274,13 +228,13 @@ func buildPartialUpdateProductQuery(
 func (q *RepoQueries) SqDeleteProduct(
 	ctx context.Context,
 	params SqDeleteProductParams,
-) (*SqDeleteProductRow, error) {
+) (*SqProductRow, error) {
 	query, args, err := buildDeleteProductQuery(params)
 	if err != nil {
 		return nil, fmt.Errorf("sq delete product build query error: %w", err)
 	}
 	row := q.db.QueryRow(ctx, query, args...)
-	var i SqDeleteProductRow
+	var i SqProductRow
 	err = row.Scan(
 		&i.ID,
 	)
