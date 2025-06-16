@@ -148,18 +148,32 @@ func (r *Repository) DeleteProduct(
 func (r *Repository) BulkCreateProducts(
 	ctx context.Context,
 	data []productsDomain.Product,
-) (int64, error) {
-	rows := make([][]interface{}, 0, len(data))
+) ([]productsDomain.Product, error) {
+	params := make([]SqProductRow, 0)
 	for _, product := range data {
-		rows = append(rows, []interface{}{product.Title, product.Name})
+		params = append(params, SqProductRow{
+			Name:  product.Name,
+			Title: product.Title,
+		})
 	}
-	columns := []string{"title", "name"}
-	sqProductsCount, err := r.queries.SqBulkCreateProducts(ctx, columns, rows)
+	sqProducts, err := r.queries.SqBulkCreateProducts(ctx, params)
 	if err != nil {
-		return 0, fmt.Errorf("sq bulk create products error: %w", err)
+		return nil, fmt.Errorf("sq bulk create products error: %w", err)
+	}
+	products := make([]productsDomain.Product, 0)
+
+	for _, sqProduct := range sqProducts {
+		products = append(products, productsDomain.Product{
+			ID:        sqProduct.ID.Bytes,
+			Name:      sqProduct.Name,
+			Title:     sqProduct.Title,
+			CreatedAt: sqProduct.CreatedAt.Time,
+			UpdatedAt: sqProduct.UpdatedAt.Time,
+			DeletedAt: NConvertPgTimestamp(sqProduct.DeletedAt),
+		})
 	}
 
-	return sqProductsCount, nil
+	return products, nil
 }
 
 func (r *Repository) BulkUpdateProducts(

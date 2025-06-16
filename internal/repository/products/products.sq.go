@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const CreateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const PartialUpdateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const DeleteProductSuffix = `RETURNING id`
+const BulkCreateProductsSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const BulkUpdateProductsSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 
 type SqProductRow struct {
@@ -257,19 +257,59 @@ func buildDeleteProductQuery(
 
 func (q *RepoQueries) SqBulkCreateProducts(
 	ctx context.Context,
-	columns []string,
-	sqProducts [][]interface{},
-) (int64, error) {
-	count, err := q.db.CopyFrom(
-		ctx,
-		pgx.Identifier{"products"},
-		columns,
-		pgx.CopyFromRows(sqProducts),
-	)
+	params []SqProductRow,
+) ([]SqProductRow, error) {
+	query, args, err := buildBulkCreateProductsQuery(params)
 	if err != nil {
-		return 0, fmt.Errorf("query failed: %w", err)
+		return nil, fmt.Errorf("sq bulk create proudcts build query error: %w", err)
 	}
-	return count, nil
+	rows, err := q.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SqProductRow
+	for rows.Next() {
+		var i SqProductRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Title,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func buildBulkCreateProductsQuery(params []SqProductRow) (string, []interface{}, error) {
+	columns := []string{"name", "title"}
+	query := sq.Insert("products").
+		Columns(columns...).
+		Suffix(BulkCreateProductsSuffix).
+		PlaceholderFormat(sq.Dollar)
+
+	for _, product := range params {
+		query = query.Values(
+			product.ID,
+			product.Name,
+			product.Title,
+		)
+	}
+
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+
+	return sqlString, args, nil
 }
 
 func (q *RepoQueries) SqBulkUpdateProducts(
