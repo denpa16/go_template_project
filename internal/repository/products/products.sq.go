@@ -3,6 +3,7 @@ package products
 import (
 	"context"
 	"fmt"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -67,23 +68,23 @@ type SqBulkUpdateProductRow struct {
 	Title string
 }
 
-type GetProductsParams struct {
+type SqGetProductsParams struct {
 	Limit  uint64
 	Offset uint64
 	Name   string `db:"name"`
 	Title  string `db:"title"`
 }
 
-type GetProductParams struct {
+type SqGetProductParams struct {
 	ID pgtype.UUID `db:"id"`
 }
 
-type CreateProductParams struct {
+type SqCreateProductParams struct {
 	Name  string `db:"name"`
 	Title string `db:"title"`
 }
 
-type PartialUpdateProductParams struct {
+type SqPartialUpdateProductParams struct {
 	ID    pgtype.UUID
 	Name  string `db:"name"`
 	Title string `db:"title"`
@@ -101,9 +102,12 @@ type SqBulkUpdateProductsParams struct {
 
 func (q *RepoQueries) SqGetProducts(
 	ctx context.Context,
-	query string,
-	args []interface{},
+	params SqGetProductsParams,
 ) ([]SqGetProductsRow, error) {
+	query, args, err := buildGetProductsQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq get products build query error: %w", err)
+	}
 	rows, err := q.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -130,14 +134,34 @@ func (q *RepoQueries) SqGetProducts(
 	return items, nil
 }
 
+func buildGetProductsQuery(
+	params SqGetProductsParams,
+) (string, []interface{}, error) {
+	dbFields := GetDbFieldsWithValues(params)
+	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
+		From("products").
+		Limit(params.Limit).
+		Offset(params.Offset).
+		PlaceholderFormat(sq.Dollar)
+	query = SelectBuilderAddWhereAnd([]string{"name", "title"}, query, dbFields)
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("sq get products query to sql error: %w", err)
+	}
+	return sqlString, args, nil
+}
+
 func (q *RepoQueries) SqGetProduct(
 	ctx context.Context,
-	query string,
-	args []interface{},
-) (SqGetProductRow, error) {
+	params SqGetProductParams,
+) (*SqGetProductRow, error) {
+	query, args, err := buildGetProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq get product build query error: %w", err)
+	}
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqGetProductRow
-	err := row.Scan(
+	err = row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Title,
@@ -145,13 +169,35 @@ func (q *RepoQueries) SqGetProduct(
 		&i.UpdatedAt,
 		&i.DeletedAt,
 	)
-	return i, err
+	return &i, err
 }
 
-func (q *RepoQueries) SqCreateProduct(ctx context.Context, query string, args []interface{}) (*SqCreateProductRow, error) {
+func buildGetProductQuery(
+	params SqGetProductParams,
+) (string, []interface{}, error) {
+	dbFields := GetDbFieldsWithValues(params)
+	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
+		From("products").
+		PlaceholderFormat(sq.Dollar)
+	query = SelectBuilderAddWhereAnd([]string{"id"}, query, dbFields)
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, fmt.Errorf("sq get product query to sql error: %w", err)
+	}
+	return sqlString, args, nil
+}
+
+func (q *RepoQueries) SqCreateProduct(
+	ctx context.Context,
+	params SqCreateProductParams,
+) (*SqCreateProductRow, error) {
+	query, args, err := buildCreateProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq create product build query error: %w", err)
+	}
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqCreateProductRow
-	err := row.Scan(
+	err = row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Title,
@@ -162,10 +208,42 @@ func (q *RepoQueries) SqCreateProduct(ctx context.Context, query string, args []
 	return &i, err
 }
 
-func (q *RepoQueries) SqPartialUpdateProduct(ctx context.Context, query string, args []interface{}) (*SqPartialUpdateProductRow, error) {
+func buildCreateProductQuery(
+	params SqCreateProductParams,
+) (string, []interface{}, error) {
+	columns := make([]string, 0)
+	values := make([]interface{}, 0)
+
+	dbFields := GetDbFieldsWithValues(params)
+	for k, v := range dbFields {
+		columns = append(columns, k)
+		values = append(values, v)
+	}
+
+	query := sq.Insert("products").
+		Columns(columns...).
+		Values(values...).
+		Suffix(CreateProductSuffix).
+		PlaceholderFormat(sq.Dollar)
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return sqlString, args, nil
+}
+
+func (q *RepoQueries) SqPartialUpdateProduct(
+	ctx context.Context,
+	params SqPartialUpdateProductParams,
+) (*SqPartialUpdateProductRow, error) {
+	query, args, err := buildPartialUpdateProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq partial update product build query error: %w", err)
+	}
+
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqPartialUpdateProductRow
-	err := row.Scan(
+	err = row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Title,
@@ -176,13 +254,51 @@ func (q *RepoQueries) SqPartialUpdateProduct(ctx context.Context, query string, 
 	return &i, err
 }
 
-func (q *RepoQueries) SqDeleteProduct(ctx context.Context, query string, args []interface{}) (*SqDeleteProductRow, error) {
+func buildPartialUpdateProductQuery(
+	params SqPartialUpdateProductParams,
+) (string, []interface{}, error) {
+	dbFields := GetDbFieldsWithValues(params)
+	query := sq.Update("products").
+		SetMap(dbFields).
+		Suffix(PartialUpdateProductSuffix).
+		PlaceholderFormat(sq.Dollar)
+	query = UpdateBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	fmt.Println(sqlString)
+	return sqlString, args, nil
+}
+
+func (q *RepoQueries) SqDeleteProduct(
+	ctx context.Context,
+	params SqDeleteProductParams,
+) (*SqDeleteProductRow, error) {
+	query, args, err := buildDeleteProductQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq delete product build query error: %w", err)
+	}
 	row := q.db.QueryRow(ctx, query, args...)
 	var i SqDeleteProductRow
-	err := row.Scan(
+	err = row.Scan(
 		&i.ID,
 	)
 	return &i, err
+}
+
+func buildDeleteProductQuery(
+	params SqDeleteProductParams,
+) (string, []interface{}, error) {
+	query := sq.Delete("products").
+		Suffix(DeleteProductSuffix).
+		PlaceholderFormat(sq.Dollar)
+	query = DeleteBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
+	sqlString, args, err := query.ToSql()
+	if err != nil {
+		return "", nil, err
+	}
+	return sqlString, args, nil
 }
 
 func (q *RepoQueries) SqBulkCreateProducts(

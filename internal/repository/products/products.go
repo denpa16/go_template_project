@@ -14,17 +14,13 @@ func (r *Repository) GetProducts(
 	ctx context.Context,
 	data productsDomain.GetProductsDTO,
 ) ([]productsDomain.Product, error) {
-	params := GetProductsParams{
+	params := SqGetProductsParams{
 		Limit:  uint64(data.Limit),
 		Offset: uint64(data.Offset),
 		Name:   data.Name,
 		Title:  data.Title,
 	}
-	query, args, err := buildGetProductsQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq get products build query error: %w", err)
-	}
-	sqProducts, err := r.queries.SqGetProducts(ctx, query, args)
+	sqProducts, err := r.queries.SqGetProducts(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("sq get products error: %w", err)
 	}
@@ -45,36 +41,14 @@ func (r *Repository) GetProducts(
 	return products, nil
 }
 
-func buildGetProductsQuery(
-	params GetProductsParams,
-) (string, []interface{}, error) {
-	dbFields := GetDbFieldsWithValues(params)
-	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
-		From("products").
-		Limit(params.Limit).
-		Offset(params.Offset).
-		PlaceholderFormat(sq.Dollar)
-	query = SelectBuilderAddWhereAnd([]string{"name", "title"}, query, dbFields)
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, fmt.Errorf("sq get products query to sql error: %w", err)
-	}
-	fmt.Println(sqlString)
-	return sqlString, args, nil
-}
-
 func (r *Repository) GetProduct(
 	ctx context.Context,
 	data productsDomain.GetProductDTO,
 ) (*productsDomain.Product, error) {
-	params := GetProductParams{
+	params := SqGetProductParams{
 		ID: pgtype.UUID{Bytes: data.ID, Valid: true},
 	}
-	query, args, err := buildGetProductQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq get product build query error: %w", err)
-	}
-	sqProduct, err := r.queries.SqGetProduct(ctx, query, args)
+	sqProduct, err := r.queries.SqGetProduct(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, productsDomain.ErrProductNotFound
@@ -92,36 +66,16 @@ func (r *Repository) GetProduct(
 	return product, nil
 }
 
-func buildGetProductQuery(
-	params GetProductParams,
-) (string, []interface{}, error) {
-	dbFields := GetDbFieldsWithValues(params)
-	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
-		From("products").
-		PlaceholderFormat(sq.Dollar)
-	query = SelectBuilderAddWhereAnd([]string{"id"}, query, dbFields)
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, fmt.Errorf("sq get product query to sql error: %w", err)
-	}
-	fmt.Println(sqlString)
-	return sqlString, args, nil
-}
-
 func (r *Repository) CreateProduct(
 	ctx context.Context,
 	data productsDomain.CreateProductDTO,
 ) (*productsDomain.Product, error) {
-	params := CreateProductParams{
+	params := SqCreateProductParams{
 		Name:  data.Name,
 		Title: data.Title,
 	}
 
-	query, args, err := buildCreateProductQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq create product build query error: %w", err)
-	}
-	sqProduct, err := r.queries.SqCreateProduct(ctx, query, args)
+	sqProduct, err := r.queries.SqCreateProduct(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("sq create product error: %w", err)
 	}
@@ -138,45 +92,17 @@ func (r *Repository) CreateProduct(
 	return &request, nil
 }
 
-func buildCreateProductQuery(
-	params CreateProductParams,
-) (string, []interface{}, error) {
-	columns := make([]string, 0)
-	values := make([]interface{}, 0)
-
-	dbFields := GetDbFieldsWithValues(params)
-	for k, v := range dbFields {
-		columns = append(columns, k)
-		values = append(values, v)
-	}
-
-	query := sq.Insert("products").
-		Columns(columns...).
-		Values(values...).
-		Suffix(CreateProductSuffix).
-		PlaceholderFormat(sq.Dollar)
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, err
-	}
-	fmt.Println(sqlString)
-	return sqlString, args, nil
-}
-
 func (r *Repository) PartialUpdateProduct(
 	ctx context.Context,
 	data productsDomain.PartialUpdateProductDTO,
 ) (*productsDomain.Product, error) {
-	params := PartialUpdateProductParams{
+	params := SqPartialUpdateProductParams{
 		ID:    pgtype.UUID{Bytes: data.ID, Valid: true},
 		Name:  data.Name,
 		Title: data.Title,
 	}
-	query, args, err := buildPartialUpdateProductQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq partial update product build query error: %w", err)
-	}
-	sqProduct, err := r.queries.SqPartialUpdateProduct(ctx, query, args)
+
+	sqProduct, err := r.queries.SqPartialUpdateProduct(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, productsDomain.ErrProductNotFound
@@ -196,23 +122,6 @@ func (r *Repository) PartialUpdateProduct(
 	return &request, nil
 }
 
-func buildPartialUpdateProductQuery(
-	params PartialUpdateProductParams,
-) (string, []interface{}, error) {
-	dbFields := GetDbFieldsWithValues(params)
-	query := sq.Update("products").
-		SetMap(dbFields).
-		Suffix(PartialUpdateProductSuffix).
-		PlaceholderFormat(sq.Dollar)
-	query = UpdateBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, err
-	}
-	fmt.Println(sqlString)
-	return sqlString, args, nil
-}
-
 func (r *Repository) DeleteProduct(
 	ctx context.Context,
 	data productsDomain.DeleteProductDTO,
@@ -220,11 +129,8 @@ func (r *Repository) DeleteProduct(
 	params := SqDeleteProductParams{
 		ID: pgtype.UUID{Bytes: data.ID, Valid: true},
 	}
-	query, args, err := buildDeleteProductQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq delete product build query error: %w", err)
-	}
-	sqProduct, err := r.queries.SqDeleteProduct(ctx, query, args)
+
+	sqProduct, err := r.queries.SqDeleteProduct(ctx, params)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, productsDomain.ErrProductNotFound
@@ -237,21 +143,6 @@ func (r *Repository) DeleteProduct(
 	}
 
 	return &request, nil
-}
-
-func buildDeleteProductQuery(
-	params SqDeleteProductParams,
-) (string, []interface{}, error) {
-	query := sq.Delete("products").
-		Suffix(DeleteProductSuffix).
-		PlaceholderFormat(sq.Dollar)
-	query = DeleteBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, err
-	}
-	fmt.Println(sqlString)
-	return sqlString, args, nil
 }
 
 func (r *Repository) BulkCreateProducts(
@@ -289,7 +180,7 @@ func (r *Repository) BulkUpdateProducts(
 	}
 	sqProducts, err := r.queries.SqBulkUpdateProducts(ctx, sqlString, args)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build update query: %w", err)
+		return nil, fmt.Errorf("failed to build bulk update query: %w", err)
 	}
 	products := make([]productsDomain.Product, 0)
 
