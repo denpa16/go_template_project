@@ -59,9 +59,45 @@ const docTemplate = `{
                 "summary": "Bulk create products",
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Products",
                         "schema": {
-                            "type": "int"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/go_template_project_internal_domain_products.Product"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Bulk update products",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Bulk update products",
+                "responses": {
+                    "200": {
+                        "description": "Products",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/go_template_project_internal_domain_products.Product"
+                            }
                         }
                     },
                     "400": {

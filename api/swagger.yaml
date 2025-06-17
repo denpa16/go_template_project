@@ -46,15 +46,39 @@ paths:
       tags:
       - Products
   /api/products:
+    patch:
+      description: Bulk update products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Products
+          schema:
+            items:
+              $ref: '#/definitions/go_template_project_internal_domain_products.Product'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Bulk update products
+      tags:
+      - Products
     post:
       description: Bulk create products
       produces:
       - application/json
       responses:
         "201":
-          description: Created
+          description: Products
           schema:
-            type: int
+            items:
+              $ref: '#/definitions/go_template_project_internal_domain_products.Product'
+            type: array
         "400":
           description: Bad Request
           schema:

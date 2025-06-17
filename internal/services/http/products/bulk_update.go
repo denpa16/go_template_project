@@ -6,11 +6,12 @@ import (
 	"log"
 )
 
-func (h Handler) BulkCreateProducts(
+func (h Handler) BulkUpdateProducts(
 	ctx context.Context,
 	data []productsDomain.Product,
 ) ([]productsDomain.Product, error) {
-	products, err := h.repository.BulkCreateProducts(ctx, data)
+	updateFields := []string{"name", "title"}
+	products, err := h.repository.BulkUpdateProducts(ctx, updateFields, data)
 	if err != nil {
 		log.Println(err)
 		return nil, err

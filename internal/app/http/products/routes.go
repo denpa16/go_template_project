@@ -46,6 +46,15 @@ func RegisterRoutes(
 		),
 	)
 
+	// Bulk update products
+	mux.Handle(
+		"PATCH /api/products",
+		NewProductBulkUpdateHandler(
+			command.New(repo),
+			"PATCH /api/products",
+		),
+	)
+
 	// Partial update product
 	mux.Handle(
 		"PATCH /api/products/{id}",

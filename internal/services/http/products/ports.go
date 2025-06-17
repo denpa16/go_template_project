@@ -30,4 +30,9 @@ type repository interface {
 		ctx context.Context,
 		data []productsDomain.Product,
 	) ([]productsDomain.Product, error)
+	BulkUpdateProducts(
+		ctx context.Context,
+		updateFields []string,
+		data []productsDomain.Product,
+	) ([]productsDomain.Product, error)
 }

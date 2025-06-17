@@ -13,39 +13,39 @@ import (
 )
 
 type (
-	bulkCreateCommand interface {
-		BulkCreateProducts(ctx context.Context, data []productsDomain.Product) ([]productsDomain.Product, error)
+	bulkUpdateCommand interface {
+		BulkUpdateProducts(ctx context.Context, data []productsDomain.Product) ([]productsDomain.Product, error)
 	}
 
-	BulkCreateHandler struct {
+	BulkUpdateHandler struct {
 		name              string
-		bulkCreateCommand bulkCreateCommand
+		bulkUpdateCommand bulkUpdateCommand
 	}
 
-	bulkCreateRequest struct {
+	bulkUpdateRequest struct {
 		body []productsDomain.Product
 	}
 )
 
-func NewProductBulkCreateHandler(command bulkCreateCommand, name string) *BulkCreateHandler {
-	return &BulkCreateHandler{
+func NewProductBulkUpdateHandler(command bulkUpdateCommand, name string) *BulkUpdateHandler {
+	return &BulkUpdateHandler{
 		name:              name,
-		bulkCreateCommand: command,
+		bulkUpdateCommand: command,
 	}
 }
 
-// @Summary		Bulk create products
-// @Description	Bulk create products
+// @Summary		Bulk update products
+// @Description	Bulk update products
 // @Tags			Products
 // @Produce		json
-// @Success		201	array		productsDomain.Product	"Products"
+// @Success		200	array		productsDomain.Product	"Products"
 // @Failure		400	{string}	string					"Bad Request"
 // @Failure		500	{string}	string					"Internal Server Error"
-// @Router			/api/products [post]
-func (h *BulkCreateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// @Router			/api/products [patch]
+func (h *BulkUpdateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var (
 		ctx         = r.Context()
-		requestData *bulkCreateRequest
+		requestData *bulkUpdateRequest
 		err         error
 	)
 
@@ -71,7 +71,7 @@ func (h *BulkCreateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseRawBody, err := h.bulkCreateCommand.BulkCreateProducts(ctx, requestData.body)
+	responseRawBody, err := h.bulkUpdateCommand.BulkUpdateProducts(ctx, requestData.body)
 	if err != nil {
 		httpResponses.GetResponse(
 			w,
@@ -99,13 +99,13 @@ func (h *BulkCreateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w,
 		h.name,
 		nil,
-		http.StatusCreated,
+		http.StatusOK,
 		&responseBody,
 	)
 }
 
-func (h *BulkCreateHandler) getRequestData(r *http.Request) (requestData *bulkCreateRequest, err error) {
-	requestData = &bulkCreateRequest{}
+func (h *BulkUpdateHandler) getRequestData(r *http.Request) (requestData *bulkUpdateRequest, err error) {
+	requestData = &bulkUpdateRequest{}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -128,6 +128,6 @@ func (h *BulkCreateHandler) getRequestData(r *http.Request) (requestData *bulkCr
 	return
 }
 
-func (h *BulkCreateHandler) validateRequestData(requestData *bulkCreateRequest) error {
+func (h *BulkUpdateHandler) validateRequestData(requestData *bulkUpdateRequest) error {
 	return validator.New().Struct(requestData)
 }
