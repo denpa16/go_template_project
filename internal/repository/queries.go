@@ -34,13 +34,14 @@ func (r *Repository) DeleteProduct(
 func (r *Repository) BulkCreateProducts(
 	ctx context.Context,
 	data []productsDomain.Product,
-) (int64, error) {
+) ([]productsDomain.Product, error) {
 	return r.productsRepo.BulkCreateProducts(ctx, data)
 }
 
 func (r *Repository) BulkUpdateProducts(
 	ctx context.Context,
+	updateFields []string,
 	data []productsDomain.Product,
 ) ([]productsDomain.Product, error) {
-	return r.productsRepo.BulkUpdateProducts(ctx, data)
+	return r.productsRepo.BulkUpdateProducts(ctx, updateFields, data)
 }
