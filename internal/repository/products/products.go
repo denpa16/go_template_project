@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	productsDomain "go_template_project/internal/domain/products"
@@ -178,21 +177,21 @@ func (r *Repository) BulkCreateProducts(
 
 func (r *Repository) BulkUpdateProducts(
 	ctx context.Context,
+	updateFields []string,
 	data []productsDomain.Product,
 ) ([]productsDomain.Product, error) {
-	var params []SqBulkUpdateProductsParams
+	params := SqBulkUpdateProductsParams{
+		UpdateFields: updateFields,
+	}
 	for _, product := range data {
-		params = append(params, SqBulkUpdateProductsParams{
+		params.Products = append(params.Products, SqProductRow{
 			ID:    pgtype.UUID{Bytes: product.ID, Valid: true},
 			Title: product.Title,
 			Name:  product.Name,
 		})
 	}
-	sqlString, args, err := buildBulkUpdateProductsQuery(params)
-	if err != nil {
-		return nil, fmt.Errorf("sq bulk update products build query error: %w", err)
-	}
-	sqProducts, err := r.queries.SqBulkUpdateProducts(ctx, sqlString, args)
+
+	sqProducts, err := r.queries.SqBulkUpdateProducts(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build bulk update query: %w", err)
 	}
@@ -210,31 +209,4 @@ func (r *Repository) BulkUpdateProducts(
 	}
 
 	return products, nil
-}
-
-func buildBulkUpdateProductsQuery(
-	data []SqBulkUpdateProductsParams,
-) (string, []interface{}, error) {
-	query := sq.Update("products").
-		Suffix(BulkUpdateProductsSuffix).
-		PlaceholderFormat(sq.Dollar)
-
-	nameCase := sq.Case("id")
-
-	for _, p := range data {
-		nameCase = nameCase.When(p.ID, p.Name)
-	}
-	query = query.Set("name", nameCase)
-
-	var ids []pgtype.UUID
-	for _, p := range data {
-		ids = append(ids, p.ID)
-	}
-	query = query.Where(sq.Eq{"id": ids})
-
-	sqlString, args, err := query.ToSql()
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to build update query: %w", err)
-	}
-	return sqlString, args, nil
 }

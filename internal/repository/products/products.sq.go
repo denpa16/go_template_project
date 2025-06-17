@@ -7,6 +7,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const (
+	ProductsTable = "products"
+)
+
 const CreateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const PartialUpdateProductSuffix = `RETURNING id, name, title, created_at, updated_at, deleted_at`
 const DeleteProductSuffix = `RETURNING id`
@@ -49,9 +53,8 @@ type SqDeleteProductParams struct {
 }
 
 type SqBulkUpdateProductsParams struct {
-	ID    pgtype.UUID
-	Name  string `db:"name"`
-	Title string `db:"title"`
+	UpdateFields []string
+	Products     []SqProductRow
 }
 
 func (q *RepoQueries) SqGetProducts(
@@ -93,7 +96,7 @@ func buildGetProductsQuery(
 ) (string, []interface{}, error) {
 	dbFields := GetDbFieldsWithValues(params)
 	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
-		From("products").
+		From(ProductsTable).
 		Limit(params.Limit).
 		Offset(params.Offset).
 		PlaceholderFormat(sq.Dollar)
@@ -131,7 +134,7 @@ func buildGetProductQuery(
 ) (string, []interface{}, error) {
 	dbFields := GetDbFieldsWithValues(params)
 	query := sq.Select("id", "name", "title", "created_at", "updated_at", "deleted_at").
-		From("products").
+		From(ProductsTable).
 		PlaceholderFormat(sq.Dollar)
 	query = SelectBuilderAddWhereAnd([]string{"id"}, query, dbFields)
 	sqlString, args, err := query.ToSql()
@@ -174,7 +177,7 @@ func buildCreateProductQuery(
 		values = append(values, v)
 	}
 
-	query := sq.Insert("products").
+	query := sq.Insert(ProductsTable).
 		Columns(columns...).
 		Values(values...).
 		Suffix(CreateProductSuffix).
@@ -212,7 +215,7 @@ func buildPartialUpdateProductQuery(
 	params SqPartialUpdateProductParams,
 ) (string, []interface{}, error) {
 	dbFields := GetDbFieldsWithValues(params)
-	query := sq.Update("products").
+	query := sq.Update(ProductsTable).
 		SetMap(dbFields).
 		Suffix(PartialUpdateProductSuffix).
 		PlaceholderFormat(sq.Dollar)
@@ -244,7 +247,7 @@ func (q *RepoQueries) SqDeleteProduct(
 func buildDeleteProductQuery(
 	params SqDeleteProductParams,
 ) (string, []interface{}, error) {
-	query := sq.Delete("products").
+	query := sq.Delete(ProductsTable).
 		Suffix(DeleteProductSuffix).
 		PlaceholderFormat(sq.Dollar)
 	query = DeleteBuilderAddWhereAnd([]string{"id"}, query, map[string]interface{}{"id": params.ID})
@@ -291,7 +294,7 @@ func (q *RepoQueries) SqBulkCreateProducts(
 
 func buildBulkCreateProductsQuery(params []SqProductRow) (string, []interface{}, error) {
 	columns := []string{"name", "title"}
-	query := sq.Insert("products").
+	query := sq.Insert(ProductsTable).
 		Columns(columns...).
 		Suffix(BulkCreateProductsSuffix).
 		PlaceholderFormat(sq.Dollar)
@@ -314,9 +317,12 @@ func buildBulkCreateProductsQuery(params []SqProductRow) (string, []interface{},
 
 func (q *RepoQueries) SqBulkUpdateProducts(
 	ctx context.Context,
-	query string,
-	args []interface{},
+	params SqBulkUpdateProductsParams,
 ) ([]SqProductRow, error) {
+	query, args, err := buildBulkUpdateProductsQuery(params)
+	if err != nil {
+		return nil, fmt.Errorf("sq bulk update products build query error: %w", err)
+	}
 	rows, err := q.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -341,4 +347,43 @@ func (q *RepoQueries) SqBulkUpdateProducts(
 		return nil, err
 	}
 	return items, nil
+}
+
+func buildBulkUpdateProductsQuery(
+	params SqBulkUpdateProductsParams,
+) (string, []interface{}, error) {
+	updateFieldsMap := make(map[string]bool)
+	for _, field := range params.UpdateFields {
+		updateFieldsMap[field] = true
+	}
+
+	query := sq.Update(ProductsTable).
+		Suffix(BulkUpdateProductsSuffix).
+		PlaceholderFormat(sq.Dollar)
+
+	nameCase := sq.Case()
+	titleCase := sq.Case()
+	for _, product := range params.Products {
+		if _, ok := updateFieldsMap["name"]; ok {
+			nameCase = nameCase.When(
+				sq.Eq{"id": product.ID.Bytes}, sq.Expr("?", product.Name),
+			).Else("name")
+		}
+		if _, ok := updateFieldsMap["title"]; ok {
+			nameCase = nameCase.When(
+				sq.Eq{"id": product.ID.Bytes}, sq.Expr("?", product.Title),
+			).Else("title")
+		}
+	}
+
+	query = query.
+		Set("name", nameCase).
+		Set("title", titleCase)
+
+	sqlString, args, err := query.ToSql()
+
+	if err != nil {
+		return "", nil, err
+	}
+	return sqlString, args, nil
 }
